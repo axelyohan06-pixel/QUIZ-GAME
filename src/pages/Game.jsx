@@ -18,11 +18,13 @@ function Game() {
   const [hasProcessedTimeout, setHasProcessedTimeout] = useState(false);
 
   const userName = location.state?.userName || '';
-  const isHost = location.state?.isHost || false;
   const playerId = getPlayerId();
   const unsubscribeRef = useRef(null);
   const timerRef = useRef(null);
   const nextQuestionTimeoutRef = useRef(null);
+
+  // Déterminer qui est l'hôte de façon fiable (survit aux rafraîchissements)
+  const isHost = roomData?.host === playerId || location.state?.isHost || false;
 
   // ─── Abonnement Firebase ───
   useEffect(() => {
@@ -46,33 +48,31 @@ function Game() {
     };
   }, [roomId, navigate]);
 
-  // ─── Timer local basé sur questionStartTime ───
+  // ─── Timer local (100% côté client pour éviter le désynchro des horloges) ───
   useEffect(() => {
-    if (!roomData || roomData.state !== 'playing' || !roomData.questionStartTime) return;
+    if (!roomData || roomData.state !== 'playing' || !roomData.questions) return;
 
     // Nettoyer l'ancien timer
     if (timerRef.current) clearInterval(timerRef.current);
 
     setSelectedAnswer(null);
     setHasProcessedTimeout(false);
+    setTimeLeft(QUESTION_TIME);
 
-    const updateTimer = () => {
-      const elapsed = Math.floor((Date.now() - roomData.questionStartTime) / 1000);
-      const remaining = Math.max(0, QUESTION_TIME - elapsed);
-      setTimeLeft(remaining);
-
-      if (remaining <= 0) {
-        clearInterval(timerRef.current);
-      }
-    };
-
-    updateTimer(); // Mettre à jour immédiatement
-    timerRef.current = setInterval(updateTimer, 1000);
+    timerRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [roomData?.questionStartTime, roomData?.state, roomData?.currentQuestionIndex]);
+  }, [roomData?.currentQuestionIndex, roomData?.state]);
 
   // ─── Quand le temps est écoulé, l'hôte traite les résultats ───
   useEffect(() => {

@@ -227,7 +227,10 @@ export async function submitAnswer(roomCode, playerId, answerIndex) {
   const allAnswered = Object.values(players).every(p => p.currentAnswer !== null && p.currentAnswer !== undefined);
 
   if (allAnswered) {
-    // Tous ont répondu → traiter les résultats immédiatement
+    // Laissons uniquement l'hôte ou une logique centralisée gérer ça pour éviter les conflits de requêtes !
+    // Si on l'appelle ici, il peut y avoir conflit entre le joueur X et l'hôte.
+    // On va plutôt mettre la logique côté composants React de l'hôte, ou simplement vérifier si on doit l'appeler.
+    // Mais vu que c'est un jeu sans serveur, le dernier joueur peut l'appeler :
     await processQuestionResults(roomCode);
   }
 }
@@ -241,7 +244,7 @@ export async function processQuestionResults(roomCode) {
   const roomData = snapshot.val();
   
   // Éviter le double traitement
-  if (roomData.state === 'showing_results') return;
+  if (roomData.state === 'showing_results' || roomData.state === 'ended') return;
   
   const currentQuestion = roomData.questions[roomData.currentQuestionIndex];
   const players = roomData.players || {};

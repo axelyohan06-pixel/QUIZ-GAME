@@ -13,7 +13,7 @@ function Lobby() {
   const [copied, setCopied] = useState(false);
   const unsubscribeRef = useRef(null);
 
-  const isHost = location.state?.isHost || false;
+  const isHost = roomData?.host === playerId || location.state?.isHost || false;
   const userName = location.state?.userName || '';
   const playerId = getPlayerId();
 
