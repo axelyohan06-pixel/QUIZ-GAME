@@ -6,7 +6,7 @@ import Game from './pages/Game';
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/QUIZ-GAME/">
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/lobby/:roomId" element={<Lobby />} />
